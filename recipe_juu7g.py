@@ -39,7 +39,7 @@ class MyFrame(tk.Frame):
         self.stl.configure(".", font=(stgs.FONT, stgs.FONT_SIZE))
 
         # mapメソッドでbackgroundを指定するとタグのbackgroundも機能するようになる
-        self.stl.map("Treeview", background=[('selected', '#99998b')])
+        self.stl.map("Treeview", background=[('selected', '#99998b')])	# 灰色
 
         # プログレスバーの作成
         self.cd = tk.IntVar(self, value=0)      # プログレスバー用カウントダウン値
@@ -164,13 +164,12 @@ class MyFrame(tk.Frame):
                             font=("", 20), anchor=tk.CENTER, text="⏰")
         # プログレスバーのスタイルにラベルを追加
         self.stl.layout('my_pbar.TProgressbar', 
-             [('my_pbar.TProgressbar.trough',
-               {'children': [('my_pbar.TProgressbar.pbar',
-                              {'side': 'left', 'sticky': 'ns'})],
-                'sticky': 'nswe'}), 
-              ('my_pbar.TProgressbar.label', {'sticky': 'nswe'})])
-        # 派生したスタイルでプログレスバーウィジェットを作成 
-        self.p_bar = ttk.Progressbar(parent, variable=self.cd, style="my_pbar.TProgressbar") # mode='determinate', orient='horizontal')    # プログレスバー
+             [
+                ('my_pbar.TProgressbar.label', {'sticky': 'nswe'})
+              ])
+        # 派生したスタイルでプログレスバーウィジェットを作成(確定モード、水平)
+        self.p_bar = ttk.Progressbar(parent, variable=self.cd, 
+                                    style="my_pbar.TProgressbar")
 
     def insert_t_widget(self, widget:tk.Text, text:str):
         """
@@ -216,8 +215,8 @@ class MyFrame(tk.Frame):
         料理名を選択し、レシピを表示、更新ボタンをクリア
         """
         if not event: return
-        # Treeviewの選択項目のiidから要素(dict)を取得し、値を取得
-        self.tv_sel = self.tv.set(self.tv.selection()[0])[self.tv["columns"][0]]
+        # Treeviewの選択項目のiidから値を取得
+        self.tv_sel = self.tv.set(self.tv.selection()[0], column='names')
         self.my_ctr.row_to_disp(self.tv_sel)    # DataFrameの行を画面表示(レシピ内容表示)
         self.search_time_set_tag()              # テキストにタグ付(タイマー)
         self.search_url_set_tag()               # テキストにタグ付(URL)
@@ -268,7 +267,7 @@ class MyFrame(tk.Frame):
         sel_end_pos = f"{pos}+{count.get()}c"
         self.t_tips.tag_add(self.tag_url, pos, sel_end_pos)
         logger.debug(f"{self.t_tips.tag_ranges(self.tag_url)=}")
-        self.search_time_set_tag(sel_end_pos)
+        self.search_url_set_tag(sel_end_pos)
 
     def add_item(self, event=None):
         """
@@ -312,7 +311,7 @@ class MyFrame(tk.Frame):
         Dataframeから選択中のデータを削除
         """
         self.my_ctr.del_item(self.tv_sel)           # Dataframeから削除
-        self.clear_t_widget()                       # 編エリアをクリア
+        self.clear_t_widget()                       # 編集エリアをクリア
         self.b_save.config(text='保存(変更あり)')    # 保存ボタンの表示変更
 
     def show_url(self, event=None):
@@ -320,26 +319,33 @@ class MyFrame(tk.Frame):
         タグ範囲の文字列を取得しブラウザを起動
         """
         i = iter(self.t_tips.tag_ranges(self.tag_url))
-        pairs = zip(i, i)   # tag_rangesの戻り値を2要素ずつのペアにする
-        event_idx = event.widget.index(tk.CURRENT)
-        tag_idx = [(s, e) for s, e in pairs if self.t_tips.compare(event_idx, ">=", s) and self.t_tips.compare(event_idx, "<=", e)]
-        if len(tag_idx) != 1: return
-        url = self.t_tips.get(f"{tag_idx[0][0]}", f"{tag_idx[0][1]}")
-        webbrowser.open(url, 2)
+        pairs = zip(i, i)                   # tag_rangesの戻り値を2要素ずつのペアにする
+        event_idx = event.widget.index(tk.CURRENT)      # マウス位置のインデックスを取得
+        # マウス位置のインデックスが範囲に含まれているタグ範囲を抽出
+        tag_idx = [(s, e) for s, e in pairs 
+                    if self.t_tips.compare(event_idx, ">=", s) 
+                    and self.t_tips.compare(event_idx, "<=", e)]
+        if len(tag_idx) != 1: return        # 該当タグ範囲は１つのはず
+        url = self.t_tips.get(f"{tag_idx[0][0]}", f"{tag_idx[0][1]}")   # タグ範囲の文字列を取得
+        webbrowser.open(url, 2)             # デフォルトブラウザで表示
 
     def start_countdown(self, event=None):
         """
         タグ範囲の文字列を取得し秒に変換しタイマーを起動
         """
         i = iter(self.t_inss.tag_ranges(self.tag_timer))
-        pairs = zip(i, i)   # tag_rangesの戻り値を2要素ずつのペアにする
-        event_idx = event.widget.index(tk.CURRENT)
-        tag_idx = [(s, e) for s, e in pairs if self.t_inss.compare(event_idx, ">=", s) and self.t_inss.compare(event_idx, "<=", e)]
-        if len(tag_idx) != 1: return
+        pairs = zip(i, i)                   # tag_rangesの戻り値を2要素ずつのペアにする
+        event_idx = event.widget.index(tk.CURRENT)      # マウス位置のインデックスを取得
+        # マウス位置のインデックスが範囲に含まれているタグ範囲を抽出
+        tag_idx = [(s, e) for s, e in pairs 
+                    if self.t_inss.compare(event_idx, ">=", s) 
+                    and self.t_inss.compare(event_idx, "<=", e)]
+        if len(tag_idx) != 1: return        # 該当タグ範囲は１つのはず
+        # タグ範囲の文字列を取得、「n分」なので「分」を除いて整数へ、分なので秒へ変換
         rest = int(self.t_inss.get(f"{tag_idx[0][0]}", f"{tag_idx[0][1]}").rstrip('分')) * 60
-        self.p_bar.config(maximum=rest)
-        self.p_bar.start(1000)
-        self.countdown(rest)
+        self.p_bar.config(maximum=rest)     # プログレスバーの最大値を設定
+        self.p_bar.start(1000)              # プログレスバーを1秒ごとに動かす
+        self.countdown(rest)                # カウントダウンの起動
 
     def countdown(self, count:int):
         """
@@ -369,8 +375,7 @@ class MyFrame(tk.Frame):
             tar_path = "."  # python コマンドで起動した場合
         path = os.path.join(tar_path, stgs.ALARM)
         logger.debug(f"{path=}")
-		# サブプロセスを実行
-        # subprocess.Popen(["start", path], shell=True)  
+		# ファイルに関連付けられたアプリケーションを使ってスタート
         os.startfile(path)
 
 class MyModel():
@@ -387,7 +392,7 @@ class MyModel():
         self.df.set_index("names", inplace=True)
         try:
             # JSONデータの読み込み
-            self.df = pd.read_json(self.path)
+            self.df = pd.read_json(self.path, orient='split')
             self.df.index.rename("names", inplace=True)
         except Exception as e2:
             messagebox.showerror("ファイルエラー", "ファイルが存在しないので空の状態で起動します")
@@ -404,7 +409,7 @@ class MyModel():
         """
         DataFrameをJSON形式で保存
         """
-        self.df.to_json(self.path, force_ascii=False)
+        self.df.to_json(self.path, force_ascii=False, orient='split')
         messagebox.showinfo("保存", f"{pathlib.Path.resolve(pathlib.Path(self.path))}に保存しました")
 
 class MyControl():
@@ -477,17 +482,18 @@ class MyControl():
                 tv.see(iid)             # 選択行を表示
         tv.update_idletasks()
 
-    def row_to_disp(self, k:str):
+    def row_to_disp(self, idx:str):
         """
-        DataFrameのk行を画面表示
+        DataFrameのidx行を画面表示
 
         Args:
-            k(str): DataFrameのインデックス値
+            idx(str): DataFrameのインデックス値
         """
-        # dataframeからk行を取得
-        inss = self.model.df.at[k, "inss"]
-        ings = self.model.df.at[k, "ings"]
-        tips = self.model.df.at[k, "tips"]
+        # dataframeからidx行を取得
+        # inss = self.model.df.at[idx, "inss"]
+        # ings = self.model.df.at[idx, "ings"]
+        # tips = self.model.df.at[idx, "tips"]
+        inss, ings, tips = self.model.df.loc[idx, ["inss", "ings", "tips"]]
         # 取得データを画面(テキストウィジェット)に表示
         self.view.insert_t_widget(self.view.t_inss, inss)
         self.view.insert_t_widget(self.view.t_ings, ings)
