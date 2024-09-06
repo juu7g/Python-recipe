@@ -128,7 +128,7 @@
 ## プログラムの説明サイト Program description site
 
 - 使い方：[タイマー付レシピ アプリ【フリー】 - プログラムでおかえしできるかな](https://juu7g.hatenablog.com/entry/Python/recipe-exe)  
-- 【準備中】作り方：[タイマー付レシピ アプリの作り方【Python】 - プログラムでおかえしできるかな](https://juu7g.hatenablog.com/entry/Python/recipe)  
+- 作り方：[タイマー付レシピ アプリの作り方【Python】 - プログラムでおかえしできるかな](https://juu7g.hatenablog.com/entry/Python/recipe)  
   
 ## 作者 Authors
 juu7g
